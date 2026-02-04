@@ -1,16 +1,21 @@
-# Python / venv
-**/venv/
-**/__pycache__/
+# Python
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-# Build artifacts
-**/build/
-**/dist/
-*.spec
+# Virtual envs
+venv/
+.venv/
+env/
 
-# Logs / cache
-**/logs/
-location_cache.json
+# Logs/build outputs
+*.log
+dist/
+build/
+logs/
 
-# Secrets
-.env
+# OS/IDE
+.DS_Store
+.vscode/
+.idea/
