@@ -740,7 +740,5 @@ def release_progress(release_id):
 
 # Run the app
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "5000"))  # Render gives PORT automatically
-    from waitress import serve
-    serve(app, host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")), debug=False)
 
