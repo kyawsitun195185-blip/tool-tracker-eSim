@@ -1,0 +1,16 @@
+# Python / venv
+**/venv/
+**/__pycache__/
+*.pyc
+
+# Build artifacts
+**/build/
+**/dist/
+*.spec
+
+# Logs / cache
+**/logs/
+location_cache.json
+
+# Secrets
+.env

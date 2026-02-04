@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>eSim Tool Tracker — Admin Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Top Header (like screenshot) -->
+  <header class="header">
+    <div class="container header-inner">
+      <div class="brand">
+        <div class="brand-title">eSim Tracker</div>
+        <div class="brand-sub">Admin Dashboard</div>
+      </div>
+
+      <nav class="nav">
+            <button class="nav-btn active" data-view="overview">Overview</button>
+            <button class="nav-btn" data-view="sessions">Sessions</button>
+            <button class="nav-btn" data-view="logs">Logs</button>
+            <button class="nav-btn" data-view="crashes">Crashes</button>
+            <button class="nav-btn" data-view="">Visualizations</button>
+      </nav>
+
+
+      <div class="top-actions">
+        <select id="userFilter" class="control">
+          <option value="">All Users</option>
+        </select>
+        <button id="refreshBtn" class="btn">Refresh</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main">
+    <!-- Small config card (collapsible style) -->
+    <section class="card config-card">
+      <div class="config-row">
+        <div>
+          <div class="section-title">Connection</div>
+          <div class="muted">Set Admin API URL + Admin token (stored in browser).</div>
+        </div>
+        <button class="btn ghost" id="toggleConfig">Show / Hide</button>
+      </div>
+
+      <div id="configBody" class="config-body">
+        <div class="grid-3">
+          <div class="field">
+            <label>Admin API URL</label>
+            <input id="apiUrl" class="control" placeholder="http://127.0.0.1:5001" />
+          </div>
+
+          <div class="field">
+            <label>Admin Token</label>
+            <input id="adminToken" class="control" placeholder="X-Admin-Token" />
+          </div>
+
+          <div class="field field-actions">
+            <label>&nbsp;</label>
+            <button id="saveConfig" class="btn primary">Save</button>
+          </div>
+        </div>
+        <div id="cfgHint" class="muted" style="margin-top:10px;"></div>
+      </div>
+    </section>
+
+    <!-- Page Title -->
+    <section class="page-head">
+      <div>
+        <div class="h1" id="pageTitle">Overview</div>
+        <div class="muted" id="pageSub">System summary & latest activity.</div>
+      </div>
+    </section>
+
+    <!-- Views (your JS will render into these) -->
+    <section id="view-overview" class="view active"></section>
+    <section id="view-sessions" class="view"></section>
+    <section id="view-logs" class="view"></section>
+    <section id="view-crashes" class="view"></section>
+    <section id="view-visuals" class="view"></section>
+
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="./app.js"></script>
+
+  <!-- tiny helper for config collapse (safe even if your app.js also handles it) -->
+  <script>
+    const btn = document.getElementById("toggleConfig");
+    const body = document.getElementById("configBody");
+    btn?.addEventListener("click", () => body.classList.toggle("hidden"));
+  </script>
+</body>
+</html>

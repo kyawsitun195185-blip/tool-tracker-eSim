@@ -1,0 +1,113 @@
+crash_id,user_id,crash_time,session_start,session_end,provider,event_id,exception_code,faulting_module,message
+9,DESKTOP-I332L4M_e4_02_9b_19_a0_73,2026-01-26 23:24:27,2026-01-26 23:23:39,2026-01-26 23:24:55,Application Error,1000,0xc0000005,eSim.exe,"Faulting application name: eSim.exe, version: 0.0.0.0, time stamp: 0x6977a9ff
+Faulting module name: eSim.exe, version: 0.0.0.0, time stamp: 0x6977a9ff
+Exception code: 0xc0000005
+Fault offset: 0x00000000000015a9
+Faulting process id: 0x3490
+Faulting application start time: 0x01dc8eeccf98d30d
+Faulting application path: C:\Users\User\OneDrive\Desktop\eSim-Tool-Tracker\src\TrackerTool\eSim.exe
+Faulting module path: C:\Users\User\OneDrive\Desktop\eSim-Tool-Tracker\src\TrackerTool\eSim.exe
+Report Id: e33e904f-5296-42a4-b95e-ff1bbdce5ed3
+Faulting package full name: 
+Faulting package-relative application ID: "
+8,DESKTOP-I332L4M_e4_02_9b_19_a0_73,2026-01-25 16:47:06,2026-01-25 16:45:29,2026-01-25 16:47:26,Application Error,1000,0xc0000409,ucrtbase.dll,"Faulting application name: eSim.exe, version: 0.0.0.0, time stamp: 0x6967c74e
+Faulting module name: ucrtbase.dll, version: 10.0.19041.3636, time stamp: 0x81cf5d89
+Exception code: 0xc0000409
+Fault offset: 0x000000000007286e
+Faulting process id: 0x2418
+Faulting application start time: 0x01dc8dec21dbf1ab
+Faulting application path: C:\Users\User\OneDrive\Desktop\eSim-Tool-Tracker\src\TrackerTool\dist\eSim.exe
+Faulting module path: C:\Windows\System32\ucrtbase.dll
+Report Id: dbc00698-9382-4957-b553-f1ded381e227
+Faulting package full name: 
+Faulting package-relative application ID: "
+7,DESKTOP-I332L4M_e4_02_9b_19_a0_73,2026-01-24 15:12:27,2026-01-24 15:11:07,2026-01-24 15:13:06,Application Error,1000,0xc0000409,ucrtbase.dll,"Faulting application name: eSim.exe, version: 0.0.0.0, time stamp: 0x6967c74e
+Faulting module name: ucrtbase.dll, version: 10.0.19041.3636, time stamp: 0x81cf5d89
+Exception code: 0xc0000409
+Fault offset: 0x000000000007286e
+Faulting process id: 0x3600
+Faulting application start time: 0x01dc8d15ba0ecc92
+Faulting application path: C:\Users\User\OneDrive\Desktop\eSim-Tool-Tracker\src\TrackerTool\dist\eSim.exe
+Faulting module path: C:\Windows\System32\ucrtbase.dll
+Report Id: f34adb4a-a57c-4223-ae28-aa47514a24ef
+Faulting package full name: 
+Faulting package-relative application ID: "
+4,DESKTOP-I332L4M_e4_02_9b_19_a0_73,2026-01-15 01:13:52,2026-01-15 01:13:19,2026-01-15 01:14:29,Application Error,1000,0xc0000409,ucrtbase.dll,"Faulting application name: eSim.exe, version: 0.0.0.0, time stamp: 0x6967c74e
+Faulting module name: ucrtbase.dll, version: 10.0.19041.3636, time stamp: 0x81cf5d89
+Exception code: 0xc0000409
+Fault offset: 0x000000000007286e
+Faulting process id: 0x4e2c
+Faulting application start time: 0x01dc8585b8fe9b58
+Faulting application path: C:\Users\User\OneDrive\Desktop\eSim-Tool-Tracker\src\TrackerTool\dist\eSim.exe
+Faulting module path: C:\Windows\System32\ucrtbase.dll
+Report Id: 50e1b580-2c5f-4c4a-83cf-ff5df8d51b77
+Faulting package full name: 
+Faulting package-relative application ID: "
+3,DESKTOP-I332L4M_e4_02_9b_19_a0_73,2026-01-15 01:03:43,2026-01-14 23:48:05,2026-01-15 01:03:55,Windows Error Reporting,1001,0xc0000409,ucrtbase.dll,"Fault bucket 1968410300663608773, type 5
+Event Name: BEX64
+Response: Not available
+Cab Id: 0
+
+Problem signature:
+P1: eSim.exe
+P2: 0.0.0.0
+P3: 6967c74e
+P4: ucrtbase.dll
+P5: 10.0.19041.3636
+P6: 81cf5d89
+P7: 000000000007286e
+P8: c0000409
+P9: 0000000000000007
+P10: 
+
+Attached files:
+\\?\C:\ProgramData\Microsoft\Windows\WER\Temp\WER893.tmp.mdmp
+\\?\C:\ProgramData\Microsoft\Windows\WER\Temp\WERA2A.tmp.WERInternalMetadata.xml
+\\?\C:\ProgramData\Microsoft\Windows\WER\Temp\WERD38.tmp.xml
+\\?\C:\ProgramData\Microsoft\Windows\WER\Temp\WERD65.tmp.csv
+\\?\C:\ProgramData\Microsoft\Windows\WER\Temp\WERDF3.tmp.txt
+\\?\C:\Users\User\AppData\Local\Temp\WERE44.tmp.appcompat.txt
+
+These files may be available here:
+\\?\C:\ProgramData\Microsoft\Windows\WER\ReportArchive\AppCrash_eSim.exe_49ca12e6138c25e0cc095818b35a36bc9090_c99d5547_46070333-a63e-497e-a424-763b4c2b0a0a
+
+Analysis symbol: 
+Rechecking for solution: 0
+Report Id: 106befd3-299f-4222-bad8-0a8d621b6df8
+Report Status: 268435456
+Hashed bucket: 12423d0a1043b896cb5132bd474635c5
+Cab Guid: 0"
+2,DESKTOP-I332L4M_e4_02_9b_19_a0_73,2026-01-14 23:43:52,2026-01-14 23:43:32,2026-01-14 23:44:07,Windows Error Reporting,1001,0xc0000409,ucrtbase.dll,"Fault bucket 1968410300663608773, type 5
+Event Name: BEX64
+Response: Not available
+Cab Id: 0
+
+Problem signature:
+P1: eSim.exe
+P2: 0.0.0.0
+P3: 6967c74e
+P4: ucrtbase.dll
+P5: 10.0.19041.3636
+P6: 81cf5d89
+P7: 000000000007286e
+P8: c0000409
+P9: 0000000000000007
+P10: 
+
+Attached files:
+\\?\C:\ProgramData\Microsoft\Windows\WER\Temp\WEREC92.tmp.mdmp
+\\?\C:\ProgramData\Microsoft\Windows\WER\Temp\WERED3F.tmp.WERInternalMetadata.xml
+\\?\C:\ProgramData\Microsoft\Windows\WER\Temp\WEREED6.tmp.xml
+\\?\C:\ProgramData\Microsoft\Windows\WER\Temp\WEREEE4.tmp.csv
+\\?\C:\ProgramData\Microsoft\Windows\WER\Temp\WEREF33.tmp.txt
+\\?\C:\Users\User\AppData\Local\Temp\WEREF55.tmp.appcompat.txt
+
+These files may be available here:
+\\?\C:\ProgramData\Microsoft\Windows\WER\ReportArchive\AppCrash_eSim.exe_49ca12e6138c25e0cc095818b35a36bc9090_c99d5547_ebad1a9e-7ae8-420a-a5c5-b349b2f6c90d
+
+Analysis symbol: 
+Rechecking for solution: 0
+Report Id: c1d9189f-a976-40d1-aef6-a546ecc7fbf3
+Report Status: 268435456
+Hashed bucket: 12423d0a1043b896cb5132bd474635c5
+Cab Guid: 0"
