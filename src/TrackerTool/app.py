@@ -5,6 +5,7 @@ import os
 from datetime import timedelta
 from psycopg2.extras import Json
 import traceback
+from threading import Thread
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -526,26 +527,25 @@ def add_crash():
                     data.get("message", ""),
                     Json(data.get("location")) if data.get("location") else None
                 ))
-        print("[EMAIL] Attempting to send crash email...", flush=True)
 
-        # ✅ Send email to admin (after insert succeeds)
-        send_crash_email_to_admin({
+        # ✅ Build a safe payload for email (strings only)
+        email_payload = {
             **data,
             "crash_time": crash_time.strftime("%Y-%m-%d %H:%M:%S") if crash_time else data.get("crash_time"),
             "session_start": sess_start.strftime("%Y-%m-%d %H:%M:%S") if sess_start else data.get("session_start"),
             "session_end": sess_end.strftime("%Y-%m-%d %H:%M:%S") if sess_end else data.get("session_end"),
-        })
+        }
+
+        print("[EMAIL] Queuing crash email...", flush=True)
+
+        # ✅ Send email in background so request returns fast
+        Thread(target=send_crash_email_to_admin, args=(email_payload,), daemon=True).start()
 
         return jsonify({"message": "Crash recorded successfully"}), 200
 
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-
-
-
-
-
 
 @app.route('/crashes', methods=['GET'])
 def get_crashes():
