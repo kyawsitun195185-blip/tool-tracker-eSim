@@ -21,52 +21,63 @@ CORS(app)  # Enable CORS for frontend interaction
  #       port="5432"
   #  )
 
-import smtplib
-from email.message import EmailMessage
-
-import smtplib
-from email.message import EmailMessage
-import ssl
+import os
+import requests
 
 def send_crash_email_to_admin(crash: dict):
-    smtp_host = os.getenv("SMTP_HOST")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_pass = os.getenv("SMTP_PASS")
-
-    from_email = os.getenv("FROM_EMAIL", smtp_user)
+    api_key = os.getenv("RESEND_API_KEY")
     admin_email = os.getenv("ADMIN_EMAIL")
+    from_email = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
 
-    if not smtp_user or not smtp_pass or not admin_email:
-        print("[EMAIL] Missing SMTP config", flush=True)
+    print("[EMAIL] Attempting Resend...", flush=True)
+
+    if not api_key:
+        print("[EMAIL] Missing RESEND_API_KEY", flush=True)
         return
 
-    msg = EmailMessage()
-    msg["Subject"] = f"[eSim] Crash — {crash.get('user_id')}"
-    msg["From"] = from_email
-    msg["To"] = admin_email
-    msg.set_content(f"""
-Crash detected!
+    if not admin_email:
+        print("[EMAIL] Missing ADMIN_EMAIL", flush=True)
+        return
+
+    url = "https://api.resend.com/emails"
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    body = {
+        "from": from_email,
+        "to": [admin_email],
+        "subject": f"[eSim] Crash — {crash.get('user_id')}",
+        "text": f"""
+🚨 eSim Crash Alert
 
 User: {crash.get('user_id')}
-Time: {crash.get('crash_time')}
+Crash Time: {crash.get('crash_time')}
+Session Start: {crash.get('session_start')}
+Session End: {crash.get('session_end')}
 Provider: {crash.get('provider')}
 Event ID: {crash.get('event_id')}
+Exception: {crash.get('exception_code')}
+Faulting Module: {crash.get('faulting_module')}
+
 Message:
-{crash.get('message')}
-""")
+{(crash.get('message') or '')[:4000]}
+"""
+    }
 
     try:
-        context = ssl.create_default_context()
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
-            server.starttls(context=context)
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
+        r = requests.post(url, json=body, headers=headers, timeout=15)
 
-        print("[EMAIL] Gmail crash alert sent OK", flush=True)
+        if r.status_code >= 400:
+            print("[EMAIL] Resend failed:", r.status_code, r.text, flush=True)
+        else:
+            print("[EMAIL] Resend sent OK", flush=True)
 
     except Exception as e:
-        print("[EMAIL] Gmail send failed:", repr(e), flush=True)
+        print("[EMAIL] Resend exception:", repr(e), flush=True)
+
 
 
 
