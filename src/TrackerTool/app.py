@@ -24,43 +24,50 @@ CORS(app)  # Enable CORS for frontend interaction
 import smtplib
 from email.message import EmailMessage
 
-import os
-import requests
+import smtplib
+from email.message import EmailMessage
+import ssl
 
 def send_crash_email_to_admin(crash: dict):
-    api_key = os.getenv("RESEND_API_KEY")
-    from_email = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
+    smtp_host = os.getenv("SMTP_HOST")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+
+    from_email = os.getenv("FROM_EMAIL", smtp_user)
     admin_email = os.getenv("ADMIN_EMAIL")
 
-    if not api_key:
-        print("[EMAIL] Missing RESEND_API_KEY", flush=True)
-        return
-    if not admin_email:
-        print("[EMAIL] Missing ADMIN_EMAIL", flush=True)
+    if not smtp_user or not smtp_pass or not admin_email:
+        print("[EMAIL] Missing SMTP config", flush=True)
         return
 
-    subject = f"[eSim] Crash — {crash.get('user_id')}"
-    text = (
-        "🚨 eSim Crash Alert\n\n"
-        f"User: {crash.get('user_id')}\n"
-        f"Crash time: {crash.get('crash_time')}\n"
-        f"Provider: {crash.get('provider')}\n"
-        f"Event ID: {crash.get('event_id')}\n"
-        f"Exception: {crash.get('exception_code')}\n"
-        f"Faulting module: {crash.get('faulting_module')}\n\n"
-        f"Message:\n{(crash.get('message') or '')[:4000]}\n"
-    )
+    msg = EmailMessage()
+    msg["Subject"] = f"[eSim] Crash — {crash.get('user_id')}"
+    msg["From"] = from_email
+    msg["To"] = admin_email
+    msg.set_content(f"""
+Crash detected!
 
-    r = requests.post(
-        "https://api.resend.com/emails",
-        headers={"Authorization": f"Bearer {api_key}"},
-        json={"from": from_email, "to": [admin_email], "subject": subject, "text": text},
-        timeout=20,
-    )
-    if r.status_code >= 400:
-        print("[EMAIL] Resend failed:", r.status_code, r.text[:300], flush=True)
-    else:
-        print("[EMAIL] Resend sent OK", flush=True)
+User: {crash.get('user_id')}
+Time: {crash.get('crash_time')}
+Provider: {crash.get('provider')}
+Event ID: {crash.get('event_id')}
+Message:
+{crash.get('message')}
+""")
+
+    try:
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
+            server.starttls(context=context)
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+
+        print("[EMAIL] Gmail crash alert sent OK", flush=True)
+
+    except Exception as e:
+        print("[EMAIL] Gmail send failed:", repr(e), flush=True)
+
 
 
 from dotenv import load_dotenv
