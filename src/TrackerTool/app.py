@@ -32,6 +32,8 @@ def send_crash_email_to_admin(crash: dict):
 
     from_email = os.getenv("FROM_EMAIL", smtp_user)
     admin_email = os.getenv("ADMIN_EMAIL")
+    print("[EMAIL] SMTP_USER:", smtp_user, "FROM_EMAIL:", from_email, "ADMIN_EMAIL:", admin_email, flush=True)
+    print("[EMAIL] SMTP_PASS length:", len(smtp_pass or ""), flush=True)
 
     if not smtp_user or not smtp_pass or not admin_email:
         print("[EMAIL] Missing SMTP_USER/SMTP_PASS/ADMIN_EMAIL. Skipping email.")
@@ -513,6 +515,7 @@ def add_crash():
                     data.get("message", ""),
                     Json(data.get("location")) if data.get("location") else None
                 ))
+        print("[EMAIL] Attempting to send crash email...", flush=True)
 
         # ✅ Send email to admin (after insert succeeds)
         send_crash_email_to_admin({
