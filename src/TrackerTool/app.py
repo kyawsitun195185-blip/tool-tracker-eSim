@@ -514,7 +514,7 @@ def add_crash():
                     Json(data.get("location")) if data.get("location") else None
                 ))
 
-        # ✅ SEND EMAIL TO ADMIN (after successful insert)
+        # ✅ EMAIL (admin only)
         send_crash_email_to_admin({
             **data,
             "crash_time": crash_time.strftime("%Y-%m-%d %H:%M:%S") if crash_time else data.get("crash_time"),
@@ -527,6 +527,7 @@ def add_crash():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
 
 
 
