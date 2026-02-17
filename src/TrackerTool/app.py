@@ -4,6 +4,7 @@ import psycopg2
 import os
 from datetime import timedelta
 from psycopg2.extras import Json
+import traceback
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -19,17 +20,69 @@ CORS(app)  # Enable CORS for frontend interaction
 #        host="dpg-cu6tr3l6l47c73c3snh0-a.oregon-postgres.render.com",
  #       port="5432"
   #  )
+
+import smtplib
+from email.message import EmailMessage
+
+def send_crash_email_to_admin(crash: dict):
+    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+
+    from_email = os.getenv("FROM_EMAIL", smtp_user)
+    admin_email = os.getenv("ADMIN_EMAIL")
+
+    if not smtp_user or not smtp_pass or not admin_email:
+        print("[EMAIL] Missing SMTP_USER/SMTP_PASS/ADMIN_EMAIL. Skipping email.")
+        return
+
+    msg_text = (
+        "🚨 eSim Crash Alert\n\n"
+        f"User: {crash.get('user_id')}\n"
+        f"Crash time: {crash.get('crash_time')}\n"
+        f"Session start: {crash.get('session_start')}\n"
+        f"Session end: {crash.get('session_end')}\n"
+        f"Provider: {crash.get('provider')}\n"
+        f"Event ID: {crash.get('event_id')}\n"
+        f"Exception: {crash.get('exception_code')}\n"
+        f"Faulting module: {crash.get('faulting_module')}\n\n"
+        f"Location:\n{crash.get('location')}\n\n"
+        f"Message:\n{(crash.get('message') or '')[:4000]}\n"
+    )
+
+    email = EmailMessage()
+    email["Subject"] = f"[eSim] Crash — {crash.get('user_id')}"
+    email["From"] = from_email
+    email["To"] = admin_email
+    email.set_content(msg_text)
+
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(email)
+        print("[EMAIL] Crash alert sent to admin.")
+    except Exception as e:
+        print("[EMAIL] Failed to send crash email:", repr(e))
+
 from dotenv import load_dotenv
 load_dotenv()
 
 def connect_db():
     return psycopg2.connect(
-        dbname=os.getenv("DB_NAME", "esim_tracker"),
-        user=os.getenv("DB_USER", "postgres"),
+        dbname=os.getenv("DB_NAME", "esim_tracker_qqjz"),
+        user=os.getenv("DB_USER", "esim_user"),
         password=os.getenv("DB_PASSWORD", ""),
-        host=os.getenv("DB_HOST", "localhost"),
+        host=os.getenv("DB_HOST", "dpg-d61hqsq4d50c73a6686g-a.oregon-postgres.render.com"),
         port=os.getenv("DB_PORT", "5432"),
+        sslmode=os.getenv("DB_SSLMODE", "require"),
+        connect_timeout=10,
     )
+
+
 # -------------------------
 # ✅ DB helper functions
 # -------------------------
@@ -215,35 +268,105 @@ def get_summary():
     }
     return jsonify(summary)
 
+import re
+from datetime import datetime, timezone
+
+def parse_dt_flexible(v):
+    """
+    Accept:
+    - datetime already
+    - 'YYYY-MM-DD HH:MM:SS'
+    - ISO 'YYYY-MM-DDTHH:MM:SS'
+    - Windows '/Date(1771270797069)/'  (ms since epoch)
+    """
+    if v is None:
+        return None
+
+    if isinstance(v, datetime):
+        return v
+
+    s = str(v).strip()
+    if not s:
+        return None
+
+    # Windows /Date( ... )/
+    m = re.match(r"^/Date\((\d+)\)/$", s)
+    if m:
+        ms = int(m.group(1))
+        return datetime.fromtimestamp(ms / 1000.0, tz=timezone.utc).replace(tzinfo=None)
+
+    # Replace T with space, try ISO
+    s2 = s.replace("T", " ")
+    try:
+        return datetime.fromisoformat(s2)
+    except Exception:
+        pass
+
+    # Last resort common format
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s2, fmt)
+        except Exception:
+            continue
+
+    return None
+
+from datetime import datetime
+from psycopg2.extras import Json
+
+def parse_dt(v):
+    if v is None:
+        return None
+    s = str(v).strip().replace("T", " ")
+    return datetime.fromisoformat(s)
+
 @app.route('/add-session', methods=['POST'])
 def add_session():
-    data = request.json or {}
-    conn = connect_db()
-    cursor = conn.cursor()
+    data = request.get_json(silent=True) or {}
 
-    total_duration_interval = f"{data['total_duration']} hours"
-    location = data.get("location")  # dict or None
+    required = ["user_id", "session_start", "session_end"]
+    missing = [k for k in required if not data.get(k)]
+    if missing:
+        return jsonify({"error": f"Missing fields: {missing}"}), 400
+
+    # Prefer seconds
+    if data.get("total_duration_seconds") is not None:
+        try:
+            secs = float(data["total_duration_seconds"])
+        except Exception:
+            return jsonify({"error": "total_duration_seconds must be numeric"}), 400
+    elif data.get("total_duration") is not None:
+        try:
+            hours = float(data["total_duration"])
+        except Exception:
+            return jsonify({"error": "total_duration must be numeric hours OR provide total_duration_seconds"}), 400
+        secs = hours * 3600.0
+    else:
+        return jsonify({"error": "Missing total_duration_seconds or total_duration"}), 400
+
+    location = data.get("location")
 
     try:
-        cursor.execute('''
-            INSERT INTO sessions (user_id, session_start, session_end, total_duration, location)
-            VALUES (%s, %s, %s, %s::INTERVAL, %s)
-        ''', (
-            data['user_id'],
-            data['session_start'],
-            data['session_end'],
-            total_duration_interval,
-            Json(location) if location else None
-        ))
-        conn.commit()
-        conn.close()
-        return jsonify({"message": "Session added successfully"})
+        with connect_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO sessions (user_id, session_start, session_end, total_duration, location)
+                    VALUES (%s, %s, %s, make_interval(secs => %s), %s)
+                    ON CONFLICT (user_id, session_start, session_end)
+                    DO UPDATE SET
+                        total_duration = EXCLUDED.total_duration,
+                        location = COALESCE(EXCLUDED.location, sessions.location);
+                """, (
+                    data["user_id"],
+                    parse_dt(data["session_start"]),
+                    parse_dt(data["session_end"]),
+                    secs,
+                    Json(location) if location else None
+                ))
+        return jsonify({"message": "Session upserted"}), 200
+
     except Exception as e:
-        conn.rollback()
-        conn.close()
-        return jsonify({"error": f"Error occurred: {str(e)}"}), 500
-
-
+        return jsonify({"error": str(e)}), 500
 
 
 
@@ -364,36 +487,48 @@ def add_crash():
     if "user_id" not in data:
         return jsonify({"error": "Missing fields: ['user_id']"}), 400
 
-    conn = connect_db()
-    cursor = conn.cursor()
     try:
-        cursor.execute('''
-            INSERT INTO crashes (
-                user_id, session_start, session_end, crash_time,
-                event_id, provider, exception_code, faulting_module, message,
-                location
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (
-            data.get("user_id"),
-            data.get("session_start"),
-            data.get("session_end"),
-            data.get("crash_time"),
-            int(data.get("event_id") or 0),
-            data.get("provider", ""),
-            data.get("exception_code", ""),
-            data.get("faulting_module", ""),
-            data.get("message", ""),
-            Json(data.get("location")) if data.get("location") else None
-        ))
+        crash_time = parse_dt_flexible(data.get("crash_time"))
+        sess_start = parse_dt_flexible(data.get("session_start"))
+        sess_end = parse_dt_flexible(data.get("session_end"))
 
-        conn.commit()
-        return jsonify({"message": "Crash recorded successfully"})
+        with connect_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    INSERT INTO crashes (
+                        user_id, session_start, session_end, crash_time,
+                        event_id, provider, exception_code, faulting_module, message,
+                        location
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ''', (
+                    data.get("user_id"),
+                    sess_start,
+                    sess_end,
+                    crash_time,
+                    int(data.get("event_id") or 0),
+                    data.get("provider", ""),
+                    data.get("exception_code", ""),
+                    data.get("faulting_module", ""),
+                    data.get("message", ""),
+                    Json(data.get("location")) if data.get("location") else None
+                ))
+
+        # ✅ SEND EMAIL TO ADMIN (after successful insert)
+        send_crash_email_to_admin({
+            **data,
+            "crash_time": crash_time.strftime("%Y-%m-%d %H:%M:%S") if crash_time else data.get("crash_time"),
+            "session_start": sess_start.strftime("%Y-%m-%d %H:%M:%S") if sess_start else data.get("session_start"),
+            "session_end": sess_end.strftime("%Y-%m-%d %H:%M:%S") if sess_end else data.get("session_end"),
+        })
+
+        return jsonify({"message": "Crash recorded successfully"}), 200
+
     except Exception as e:
-        conn.rollback()
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
+
+
 
 
 @app.route('/crashes', methods=['GET'])
