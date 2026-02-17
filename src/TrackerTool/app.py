@@ -24,15 +24,19 @@ CORS(app)  # Enable CORS for frontend interaction
 import smtplib
 from email.message import EmailMessage
 
-import os, requests
+import os
+import requests
 
 def send_crash_email_to_admin(crash: dict):
     api_key = os.getenv("RESEND_API_KEY")
     from_email = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
     admin_email = os.getenv("ADMIN_EMAIL")
 
-    if not api_key or not admin_email:
-        print("[EMAIL] Missing RESEND_API_KEY/ADMIN_EMAIL", flush=True)
+    if not api_key:
+        print("[EMAIL] Missing RESEND_API_KEY", flush=True)
+        return
+    if not admin_email:
+        print("[EMAIL] Missing ADMIN_EMAIL", flush=True)
         return
 
     subject = f"[eSim] Crash — {crash.get('user_id')}"
