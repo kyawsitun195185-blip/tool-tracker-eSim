@@ -490,7 +490,7 @@ def add_crash():
     try:
         crash_time = parse_dt_flexible(data.get("crash_time"))
         sess_start = parse_dt_flexible(data.get("session_start"))
-        sess_end = parse_dt_flexible(data.get("session_end"))
+        sess_end   = parse_dt_flexible(data.get("session_end"))
 
         with connect_db() as conn:
             with conn.cursor() as cursor:
@@ -514,7 +514,7 @@ def add_crash():
                     Json(data.get("location")) if data.get("location") else None
                 ))
 
-        # ✅ EMAIL (admin only)
+        # ✅ Send email to admin (after insert succeeds)
         send_crash_email_to_admin({
             **data,
             "crash_time": crash_time.strftime("%Y-%m-%d %H:%M:%S") if crash_time else data.get("crash_time"),
@@ -527,6 +527,7 @@ def add_crash():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
 
 
 
