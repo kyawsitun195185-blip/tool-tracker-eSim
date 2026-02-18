@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 
 # ✅ EXACTLY SAME as your original (no backend/API changes)
 #API_BASE_URL = "https://tooltracker-afxj.onrender.com"
-API_BASE_URL = "http://127.0.0.1:5000"
+API_BASE_URL = os.getenv("API_BASE_URL", "https://tool-tracker-esim-api.onrender.com").rstrip("/")
 
 
 # -----------------------------

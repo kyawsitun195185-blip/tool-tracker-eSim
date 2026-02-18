@@ -25,33 +25,28 @@ CORS(app)  # Enable CORS for frontend interaction
 import os
 import requests
 
+import smtplib
+from email.message import EmailMessage
+
 def send_crash_email_to_admin(crash: dict):
-    api_key = os.getenv("RESEND_API_KEY")
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
     admin_email = os.getenv("ADMIN_EMAIL")
-    from_email = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
+    from_email = os.getenv("FROM_EMAIL", smtp_user)
 
-    print("[EMAIL] Attempting Resend...", flush=True)
+    print("[EMAIL] Attempting Gmail SMTP...", flush=True)
 
-    if not api_key:
-        print("[EMAIL] Missing RESEND_API_KEY", flush=True)
+    if not smtp_user or not smtp_pass or not admin_email:
+        print("[EMAIL] Missing SMTP_USER / SMTP_PASS / ADMIN_EMAIL", flush=True)
         return
 
-    if not admin_email:
-        print("[EMAIL] Missing ADMIN_EMAIL", flush=True)
-        return
+    try:
+        msg = EmailMessage()
+        msg["Subject"] = f"[eSim] Crash — {crash.get('user_id')}"
+        msg["From"] = from_email
+        msg["To"] = admin_email
 
-    url = "https://api.resend.com/emails"
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-
-    body = {
-        "from": from_email,
-        "to": [admin_email],
-        "subject": f"[eSim] Crash — {crash.get('user_id')}",
-        "text": f"""
+        msg.set_content(f"""
 🚨 eSim Crash Alert
 
 User: {crash.get('user_id')}
@@ -65,20 +60,17 @@ Faulting Module: {crash.get('faulting_module')}
 
 Message:
 {(crash.get('message') or '')[:4000]}
-"""
-    }
+""")
 
-    try:
-        r = requests.post(url, json=body, headers=headers, timeout=15)
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
 
-        if r.status_code >= 400:
-            print("[EMAIL] Resend failed:", r.status_code, r.text, flush=True)
-        else:
-            print("[EMAIL] Resend sent OK", flush=True)
+        print("[EMAIL] Gmail sent OK", flush=True)
 
     except Exception as e:
-        print("[EMAIL] Resend exception:", repr(e), flush=True)
-
+        print("[EMAIL] Gmail failed:", repr(e), flush=True)
 
 
 
