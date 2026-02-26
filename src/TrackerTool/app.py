@@ -6,6 +6,7 @@ from datetime import timedelta
 from psycopg2.extras import Json
 import traceback
 from threading import Thread
+import hashlib
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -219,8 +220,6 @@ def get_sessions():
         })
 
     return jsonify(formatted_sessions)
-
-
 
 @app.route('/logs', methods=['GET'])
 def get_logs():
@@ -886,6 +885,37 @@ def release_progress(release_id):
     """, (release_id,))
     stats = {r[0]: r[1] for r in rows}
     return jsonify({"release_id": release_id, "by_status": stats})
+
+@app.route("/add-env-snapshot", methods=["POST"])
+def add_env_snapshot():
+    data = request.get_json(force=True) or {}
+
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO env_snapshots (
+          snapshot_id, user_id, session_id, timestamp,
+          os_name, os_release, os_version, machine, processor,
+          cpu_count_logical, cpu_count_physical, total_ram_gb, toolchain
+        )
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        ON CONFLICT (snapshot_id) DO NOTHING
+    """, (
+        data.get("snapshot_id"),
+        data.get("user_id"),
+        data.get("session_id"),
+        data.get("timestamp"),
+        data.get("os_name"),
+        data.get("os_release"),
+        data.get("os_version"),
+        data.get("machine"),
+        data.get("processor"),
+        data.get("cpu_count_logical"),
+        data.get("cpu_count_physical"),
+        data.get("total_ram_gb"),
+        Json(data.get("toolchain")) if data.get("toolchain") else None
+    ))
+    conn.commit()
+    return jsonify({"message": "env snapshot stored"}), 200
 
 # Run the app
 if __name__ == "__main__":
