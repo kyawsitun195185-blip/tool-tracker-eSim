@@ -901,41 +901,40 @@ from psycopg2.extras import Json
 
 @app.route("/add-env-snapshot", methods=["POST"])
 def add_env_snapshot():
-    data = request.get_json(force=True) or {}
+    data = request.get_json(silent=True) or {}
 
-    conn = get_conn()
     try:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO env_snapshots (
-              snapshot_id, user_id, session_id, timestamp,
-              os_name, os_release, os_version, machine, processor,
-              cpu_count_logical, cpu_count_physical, total_ram_gb, toolchain
-            )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            ON CONFLICT (snapshot_id) DO NOTHING
-        """, (
-            data.get("snapshot_id"),
-            data.get("user_id"),
-            data.get("session_id"),
-            data.get("timestamp"),
-            data.get("os_name"),
-            data.get("os_release"),
-            data.get("os_version"),
-            data.get("machine"),
-            data.get("processor"),
-            data.get("cpu_count_logical"),
-            data.get("cpu_count_physical"),
-            data.get("total_ram_gb"),
-            Json(data.get("toolchain")) if data.get("toolchain") else None
-        ))
-        conn.commit()
+        with connect_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO env_snapshots (
+                      snapshot_id, user_id, session_id, timestamp,
+                      os_name, os_release, os_version, machine, processor,
+                      cpu_count_logical, cpu_count_physical, total_ram_gb, toolchain
+                    )
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON CONFLICT (snapshot_id) DO NOTHING
+                """, (
+                    data.get("snapshot_id"),
+                    data.get("user_id"),
+                    data.get("session_id"),
+                    data.get("timestamp"),
+                    data.get("os_name"),
+                    data.get("os_release"),
+                    data.get("os_version"),
+                    data.get("machine"),
+                    data.get("processor"),
+                    data.get("cpu_count_logical"),
+                    data.get("cpu_count_physical"),
+                    data.get("total_ram_gb"),
+                    Json(data.get("toolchain")) if data.get("toolchain") else None
+                ))
+
         return jsonify({"message": "env snapshot stored"}), 200
-    finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 # Run the app
 if __name__ == "__main__":
