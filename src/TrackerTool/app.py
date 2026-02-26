@@ -113,6 +113,17 @@ def exec_sql(sql, params=()):
     finally:
         conn.close()
 
+import os
+import psycopg2
+
+def get_conn():
+    # Render usually provides DATABASE_URL
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        raise RuntimeError("DATABASE_URL is not set")
+    return psycopg2.connect(db_url)
+
+
 
 def qall(sql, params=()):
     """SELECT many rows (returns list of tuples)"""
@@ -886,36 +897,45 @@ def release_progress(release_id):
     stats = {r[0]: r[1] for r in rows}
     return jsonify({"release_id": release_id, "by_status": stats})
 
+from psycopg2.extras import Json
+
 @app.route("/add-env-snapshot", methods=["POST"])
 def add_env_snapshot():
     data = request.get_json(force=True) or {}
 
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO env_snapshots (
-          snapshot_id, user_id, session_id, timestamp,
-          os_name, os_release, os_version, machine, processor,
-          cpu_count_logical, cpu_count_physical, total_ram_gb, toolchain
-        )
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        ON CONFLICT (snapshot_id) DO NOTHING
-    """, (
-        data.get("snapshot_id"),
-        data.get("user_id"),
-        data.get("session_id"),
-        data.get("timestamp"),
-        data.get("os_name"),
-        data.get("os_release"),
-        data.get("os_version"),
-        data.get("machine"),
-        data.get("processor"),
-        data.get("cpu_count_logical"),
-        data.get("cpu_count_physical"),
-        data.get("total_ram_gb"),
-        Json(data.get("toolchain")) if data.get("toolchain") else None
-    ))
-    conn.commit()
-    return jsonify({"message": "env snapshot stored"}), 200
+    conn = get_conn()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO env_snapshots (
+              snapshot_id, user_id, session_id, timestamp,
+              os_name, os_release, os_version, machine, processor,
+              cpu_count_logical, cpu_count_physical, total_ram_gb, toolchain
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (snapshot_id) DO NOTHING
+        """, (
+            data.get("snapshot_id"),
+            data.get("user_id"),
+            data.get("session_id"),
+            data.get("timestamp"),
+            data.get("os_name"),
+            data.get("os_release"),
+            data.get("os_version"),
+            data.get("machine"),
+            data.get("processor"),
+            data.get("cpu_count_logical"),
+            data.get("cpu_count_physical"),
+            data.get("total_ram_gb"),
+            Json(data.get("toolchain")) if data.get("toolchain") else None
+        ))
+        conn.commit()
+        return jsonify({"message": "env snapshot stored"}), 200
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 # Run the app
 if __name__ == "__main__":
