@@ -189,17 +189,28 @@ def get_stats():
         "avg_duration": float(avg_duration),  # Convert to numeric format
     })
 
-@app.route("/health/db")
+@app.route("/health/db", methods=["GET"])
 def health_db():
     try:
         with connect_db() as conn:
+            dsn = conn.get_dsn_parameters()
             with conn.cursor() as cur:
-                cur.execute("SELECT 1;")
-                return jsonify({"ok": True, "db": cur.fetchone()[0]}), 200
+                cur.execute("select current_database(), current_user;")
+                dbname, dbuser = cur.fetchone()
+
+        # ✅ Don't leak password. This is safe.
+        return jsonify({
+            "ok": True,
+            "current_database": dbname,
+            "current_user": dbuser,
+            "dsn_host": dsn.get("host"),
+            "dsn_dbname": dsn.get("dbname"),
+            "dsn_user": dsn.get("user"),
+        })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
     
-    
+
 # API Endpoint: Get all sessions
 @app.route('/sessions', methods=['GET'])
 def get_sessions():
