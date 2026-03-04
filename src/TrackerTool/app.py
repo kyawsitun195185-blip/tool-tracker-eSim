@@ -136,6 +136,25 @@ def q1(sql, params=()):
     finally:
         conn.close()
 
+@app.route("/debug/counts", methods=["GET"])
+def debug_counts():
+    with connect_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("select current_database(), current_user;")
+            who = cur.fetchone()
+
+            cur.execute("select count(*) from public.sessions;")
+            sessions = cur.fetchone()[0]
+            cur.execute("select count(*) from public.logs;")
+            logs = cur.fetchone()[0]
+            cur.execute("select count(*) from public.crashes;")
+            crashes = cur.fetchone()[0]
+
+    return jsonify({
+        "db": who[0],
+        "user": who[1],
+        "counts": {"sessions": sessions, "logs": logs, "crashes": crashes}
+    })
 # Serve the front-end (index.html)
 @app.route('/')
 def serve_frontend():
