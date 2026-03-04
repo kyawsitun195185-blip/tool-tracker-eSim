@@ -85,15 +85,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def connect_db():
-    return psycopg2.connect(
-        dbname=os.getenv("DB_NAME", "esim_tracker_qqjz"),
-        user=os.getenv("DB_USER", "esim_user"),
-        password=os.getenv("DB_PASSWORD", ""),
-        host=os.getenv("DB_HOST", "dpg-d61hqsq4d50c73a6686g-a.oregon-postgres.render.com"),
-        port=os.getenv("DB_PORT", "5432"),
-        sslmode=os.getenv("DB_SSLMODE", "require"),
-        connect_timeout=10,
-    )
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        raise RuntimeError("DATABASE_URL is not set")
+    # ensure sslmode=require even if missing
+    if "sslmode=" not in db_url:
+        sep = "&" if "?" in db_url else "?"
+        db_url = db_url + f"{sep}sslmode=require"
+    return psycopg2.connect(db_url, connect_timeout=10)
 
 
 # -------------------------
@@ -115,15 +114,6 @@ def exec_sql(sql, params=()):
 
 import os
 import psycopg2
-
-def get_conn():
-    # Render usually provides DATABASE_URL
-    db_url = os.getenv("DATABASE_URL")
-    if not db_url:
-        raise RuntimeError("DATABASE_URL is not set")
-    return psycopg2.connect(db_url)
-
-
 
 def qall(sql, params=()):
     """SELECT many rows (returns list of tuples)"""
@@ -198,6 +188,18 @@ def get_stats():
         "total_hours": float(total_hours),  # Convert to numeric format
         "avg_duration": float(avg_duration),  # Convert to numeric format
     })
+
+@app.route("/health/db")
+def health_db():
+    try:
+        with connect_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1;")
+                return jsonify({"ok": True, "db": cur.fetchone()[0]}), 200
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+    
+    
 # API Endpoint: Get all sessions
 @app.route('/sessions', methods=['GET'])
 def get_sessions():
