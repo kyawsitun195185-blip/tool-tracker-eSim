@@ -1,0 +1,9 @@
+Log capturing started...
+Starting eSim......
+Function : Create workspace
+C:\Users\User\eSim-Workspace
+Session tracking enabled (from remembered preferences).
+Tracker started successfully for user: DESKTOP-I332L4M_User_e4_02_9b_19_a0_73
+GUI user_id: DESKTOP-I332L4M_User_e4_02_9b_19_a0_73
+Tracker Tool launched successfully.
+GUI user_id: DESKTOP-I332L4M_User_e4_02_9b_19_a0_73

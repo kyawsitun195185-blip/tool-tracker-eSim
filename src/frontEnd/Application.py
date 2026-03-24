@@ -34,7 +34,8 @@ from PyQt5.Qt import QSize
 from configuration.Appconfig import Appconfig
 from frontEnd import ProjectExplorer
 from frontEnd import Workspace
-from frontEnd import DockArea,tracker
+from frontEnd import DockArea
+from TrackerTool import tracker
 from projManagement.openProject import OpenProjectInfo
 from projManagement.newProject import NewProjectInfo
 from projManagement.Kicad import Kicad
@@ -837,54 +838,48 @@ def main(args):
     appView.obj_workspace.returnWhetherClickedOrNot(appView)
 
     try:
-        if os.name == 'nt':
-            user_home = os.path.join('library', 'config')
-        else:
-            user_home = os.path.expanduser('~')
+        user_home = os.path.expanduser('~')
+        esim_dir = os.path.join(user_home, ".esim")
+        os.makedirs(esim_dir, exist_ok=True)
 
-        file = open(os.path.join(user_home, ".esim/workspace.txt"), 'r')
-        work = int(file.read(1))
-        file.close()
-    except IOError:
+        workspace_file = os.path.join(esim_dir, "workspace.txt")
+        with open(workspace_file, 'r') as file:
+            work = int(file.read(1))
+    except (IOError, ValueError):
         work = 0
-
     def show_preferences():
-        
         global tracker_thread
-        if os.name == "nt":  # Windows
-            preferences_file = os.path.join(os.environ["APPDATA"], "eSim", "preferences.json")
-        else:  # Linux/macOS
-            preferences_file = os.path.expanduser("~/.esim/preferences.json")
-            user_preferences = {}
 
-        # Load existing preferences if available
+        if os.name == "nt":
+            preferences_file = os.path.join(os.environ["APPDATA"], "eSim", "preferences.json")
+        else:
+            preferences_file = os.path.expanduser("~/.esim/preferences.json")
+
+        user_preferences = {}
+
         if os.path.exists(preferences_file):
             with open(preferences_file, "r") as file:
                 user_preferences = json.load(file)
 
-        # Show dialog if the user has not chosen to remember preferences
         if not user_preferences.get("remember_choice", False):
             dialog = UserPreferenceDialog()
             if dialog.exec_() == QtWidgets.QDialog.Accepted:
                 preferences = dialog.getPreferences()
 
-                # Save preferences if the user chose to remember
                 if preferences["remember_choice"]:
                     os.makedirs(os.path.dirname(preferences_file), exist_ok=True)
                     with open(preferences_file, "w") as file:
                         json.dump(preferences, file)
 
-                # Start session tracking if the user chose to track
                 if preferences["track_session"]:
                     print("Session tracking enabled.")
-                    start_tracking(preferences["username"])  # Start tracking in a separate process
+                    start_tracking(preferences["username"])
                 else:
                     print("Session tracking disabled.")
             else:
                 print("User cancelled. Exiting application.")
                 sys.exit(0)
         else:
-            # Act based on remembered preferences
             if user_preferences.get("track_session", False):
                 print("Session tracking enabled (from remembered preferences).")
                 start_tracking(user_preferences.get("username", "Unknown"))
@@ -894,35 +889,38 @@ def main(args):
     
 
     def start_tracking(username):
-            """
-            Start tracking the session by launching tracker.py as a separate process.
-            """
-            try:
-                # Get the current working directory (from where the script is executed)
-                current_dir = os.getcwd()
+        """
+        Start tracking the session by launching tracker.py as a separate process.
+        """
+        try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            src_dir = os.path.dirname(base_dir)   # goes from frontEnd -> src
+            tracker_script = os.path.join(src_dir, "TrackerTool", "tracker.py")
 
-                # Move up one directory to the parent directory and then navigate to TrackerTool
-                parent_dir = os.path.dirname(current_dir)  # Go one directory up
-                tracker_script = os.path.join(parent_dir,"TrackerTool", "tracker.py")
+            if not os.path.exists(tracker_script):
+                raise FileNotFoundError(f"Tracker script not found at: {tracker_script}")
 
-                if not os.path.exists(tracker_script):
-                    raise FileNotFoundError(f"Tracker script not found at: {tracker_script}")
+            command = [sys.executable, tracker_script, username]
 
-                # The command to run tracker.py as an independent process
-                command = [sys.executable, tracker_script, username]
+            if sys.platform.startswith("win"):
+                DETACHED_PROCESS = 0x00000008
+                CREATE_NO_WINDOW = 0x08000000
+                subprocess.Popen(
+                    command,
+                    creationflags=DETACHED_PROCESS | CREATE_NO_WINDOW,
+                    close_fds=True
+                )
+            else:
+                subprocess.Popen(
+                    command,
+                    preexec_fn=os.setsid,
+                    close_fds=True
+                )
 
-                if sys.platform.startswith("win"):
-                    # Windows: DETACHED_PROCESS ensures process runs independently
-                    DETACHED_PROCESS = 0x00000008
-                    subprocess.Popen(command, creationflags=DETACHED_PROCESS, close_fds=True)
-                else:
-                    # Linux/macOS: Use setsid to detach process
-                    subprocess.Popen(command, preexec_fn=os.setsid, close_fds=True)
+            print(f"Tracker started successfully for user: {username}")
 
-                print(f"Tracker started successfully for user: {username}")
-
-            except Exception as e:
-                print("Error starting tracker:", e)   
+        except Exception as e:
+            print("Error starting tracker:", e)   
  
     def after_workspace_selection():
             splash.close()

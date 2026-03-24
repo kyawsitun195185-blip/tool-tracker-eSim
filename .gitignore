@@ -1,21 +1,11 @@
-# Python
+﻿venv/
+env/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-
-# Virtual envs
-venv/
-.venv/
-env/
-
-# Logs/build outputs
-*.log
+*.exe
+*.env
+.env
+credentials.json
+token.json
 dist/
 build/
-logs/
-
-# OS/IDE
-.DS_Store
-.vscode/
-.idea/

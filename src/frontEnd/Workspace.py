@@ -127,28 +127,26 @@ class Workspace(QtWidgets.QWidget):
         self.obj_appconfig.workspace_check = self.chkbox.checkState()
         print(self.workspace_loc.text())
 
-        if os.name == 'nt':
-            user_home = os.path.join('library', 'config')
-        else:
-            user_home = os.path.expanduser('~')
+        user_home = os.path.expanduser('~')
+        esim_dir = os.path.join(user_home, ".esim")
+        os.makedirs(esim_dir, exist_ok=True)
 
-        file = open(os.path.join(user_home, ".esim/workspace.txt"), 'w')
-        file.writelines(
-            str(self.obj_appconfig.workspace_check) +
-            " " + self.workspace_loc.text()
-        )
-        file.close()
+        workspace_file = os.path.join(esim_dir, "workspace.txt")
+        with open(workspace_file, 'w') as file:
+            file.write(
+                str(self.obj_appconfig.workspace_check) +
+                " " + self.workspace_loc.text()
+            )
 
         self.create_workspace = str(self.workspace_loc.text())
         self.obj_appconfig.print_info('Workspace : ' + self.create_workspace)
-        # Checking if Workspace already exist or not
+
         if os.path.isdir(self.create_workspace):
-            self.obj_appconfig.default_workspace["workspace"] \
-                = self.create_workspace
+            self.obj_appconfig.default_workspace["workspace"] = self.create_workspace
         else:
             os.mkdir(self.create_workspace)
-            self.obj_appconfig.default_workspace["workspace"] \
-                = self.create_workspace
+            self.obj_appconfig.default_workspace["workspace"] = self.create_workspace
+
         self.imp_var = 1
         self.close()
 
